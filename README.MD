@@ -1,8 +1,4 @@
 
-
-
-# Dokumentasi Game Maze
-
 ## 1. Maze Generation
 
 Algoritma yang digunakan adalah **Iterative DFS (Recursive Backtracking)** untuk menghasilkan perfect maze, yaitu maze yang memiliki tepat satu jalur antara dua titik mana pun.
