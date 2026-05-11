@@ -1,0 +1,207 @@
+body{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+    font-family: "Arial", sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+#maze-container{
+    position: relative;
+    margin: 20px;
+    box-shadow: 0 0 30px rgba(33, 150, 243, 0.3);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.cell{
+    position: relative;
+    box-sizing: border-box;
+    background: rgba(225, 225, 225, 0.9);
+    transition: backround 0.3s ease;
+}
+
+.cell.exit{
+    background: linear-gradient(45deg, #42a5f5, #90caf9);
+    animation: exitGlow 2s infinite;
+}
+
+@keyframes exitGlow {
+    0%,
+    100%{
+        opacity: 0.8;
+    }
+    50%{
+        opacity: 1;
+    }
+}
+
+.wall{
+    background-color: #333;
+    position: absolute;
+}
+
+.wall.top{
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+}
+
+.wall.right{
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 2px;
+}
+
+.wall.bottom{
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+}
+
+.wall.left{
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 2px;
+}
+
+#player{
+    position: absolute;
+    background: radial-gradient(circle, #42a5f5, #1565c0);
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(33, 150, 243, 0.5);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100%{
+        transform: scale(1);
+
+    }
+    50%{
+        transform: scale(1.1);
+    }
+}
+
+#controls{
+    margin: 10px;
+    display: grid;
+    grid-template-areas: 
+        ". up ."
+        "left . right"
+        ". down .";
+    gap: 10px;
+    justify-content: center;
+}
+
+.control-btn{
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    background: linear-gradient(45deg, #333, #444);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.control-btn:active{
+    transform: scale(0.9);
+}
+
+#up{
+    grid-area: up;
+}
+
+#left{
+    grid-area: left;
+}
+
+#right{
+    grid-area: right;
+}
+
+#down{
+    grid-area: down;
+}
+
+#message{
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.95);
+    color: white;
+    padding: 30px 40px;
+    border-radius: 20px;
+    text-align: center;
+    display: none;
+    opacity: 0;
+    animation: messageAppear 0.5s forwards;
+    box-shadow: 0 0 30px rgba(33, 150, 243, 0.3);
+}
+
+@keyframes messageAppear {
+    from{
+        opacity: 0;
+        transform: translate(-50%, -60%);
+    }
+    to{
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+#try-again{
+    background: linear-gradient(45deg, #2196f3, #1565c0);
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 25px;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    letter-spacing: 1px;
+}
+
+#try-again:hover{
+    transform: scale(1.1);
+    box-sizing: 0 0 20px rgba(33, 150, 243, 0.5);
+}
+
+#timer{
+    font-size: 28px;
+    margin: 20px;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+    padding: 10px 20px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid #2196f3;
+}
+
+.exit{
+    background-color: #bbdefb;
+}
+
+#maze{
+    display: grid;
+    background-color: white;
+}
+
+.hover-effect{
+    background: linear-gradient(45deg, #4caf50, #45a049) !important;
+    transform: scale(1.15) !important;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.5) !important;
+}
