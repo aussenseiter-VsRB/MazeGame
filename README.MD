@@ -74,10 +74,3 @@ Game memori maze berbasis web. Dimainkan di resolusi tablet 1000x600px.
 | `CELL_SIZE` | 48 | Ukuran cell dalam pixel |
 | `GAME_WIDTH` | 1000 | Lebar container game |
 | `GAME_HEIGHT` | 600 | Tinggi container game |
-
-## Catatan
-
-- Single page application (index.html).
-- Tidak menggunakan ES6 modules (import/export).
-- Kontrol hanya dengan arrow keys.
-- Tidak ada console error di Google Chrome.
