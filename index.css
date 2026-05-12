@@ -26,11 +26,11 @@ body {
     overflow: hidden;
 }
 
-#welcome-screen {
+#welcome {
     text-align: center;
 }
 
-#welcome-screen h1 {
+#welcome h1 {
     font-size: 48px;
     margin: 0 0 30px 0;
     color: #7c7cff;
@@ -38,7 +38,7 @@ body {
     letter-spacing: 4px;
 }
 
-#welcome-screen input {
+#welcome input {
     display: block;
     margin: 0 auto 15px auto;
     padding: 12px 20px;
@@ -51,12 +51,12 @@ body {
     width: 280px;
 }
 
-#welcome-screen input:focus {
+#welcome input:focus {
     border-color: #7c7cff;
 }
 
-#welcome-screen button,
-#hint-btn {
+#welcome button,
+#hintBtn {
     display: block;
     margin: 10px auto;
     padding: 12px 30px;
@@ -70,17 +70,17 @@ body {
     width: 280px;
 }
 
-#welcome-screen button:hover:not(:disabled),
-#hint-btn:hover:not(:disabled) {
+#welcome button:hover:not(:disabled),
+#hintBtn:hover:not(:disabled) {
     background: #5c5cdf;
 }
 
-#welcome-screen button:disabled {
+#welcome button:disabled {
     opacity: 0.4;
     cursor: not-allowed;
 }
 
-#game-screen {
+#game {
     width: 100%;
     height: 100%;
     display: flex;
@@ -106,13 +106,13 @@ body {
     margin: 0 6px;
 }
 
-#phase-display {
+#barPhase {
     color: #ffcc00;
     font-weight: bold;
     text-transform: uppercase;
 }
 
-#lives-display {
+#barLives {
     color: #ff4444;
 }
 
@@ -125,7 +125,7 @@ body {
     border-radius: 4px;
 }
 
-#maze-grid {
+#grid {
     display: grid;
     grid-template-columns: repeat(10, 48px);
     grid-template-rows: repeat(10, 48px);
@@ -141,23 +141,27 @@ body {
     position: relative;
 }
 
-.cell.start {
+/* JS adds class 's' for start */
+.cell.s {
     background: #44cc44;
 }
 
-.cell.finish {
+/* JS adds class 'f' for finish */
+.cell.f {
     background: #ffaa00;
 }
 
-.cell.wall {
+/* JS adds class 'w' for wall visible */
+.cell.w {
     background: #666688;
 }
 
-.cell.wall-hidden {
+/* JS adds class 'h' for wall hidden */
+.cell.h {
     background: #3a3a5e;
 }
 
-#player {
+#pawn {
     position: absolute;
     width: 38px;
     height: 38px;
@@ -169,7 +173,7 @@ body {
     pointer-events: none;
 }
 
-#hint-btn {
+#hintBtn {
     width: 200px;
     margin: 6px auto;
     padding: 10px;
@@ -181,12 +185,12 @@ body {
     cursor: pointer;
 }
 
-#hint-btn:disabled {
+#hintBtn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
 }
 
-#hint-btn:hover:not(:disabled) {
+#hintBtn:hover:not(:disabled) {
     background: #dd6622;
 }
 
@@ -214,7 +218,8 @@ body {
     position: relative;
 }
 
-.close-modal {
+/* JS looks for class 'x' on close buttons */
+.x {
     position: absolute;
     top: 10px;
     right: 16px;
@@ -223,7 +228,7 @@ body {
     color: #888;
 }
 
-.close-modal:hover {
+.x:hover {
     color: #fff;
 }
 
@@ -248,7 +253,7 @@ body {
     color: #7c7cff;
 }
 
-#save-score-btn {
+#saveBtn {
     padding: 12px 30px;
     font-size: 16px;
     border: none;
@@ -259,6 +264,6 @@ body {
     margin: 10px 0;
 }
 
-#save-score-btn:hover {
+#saveBtn:hover {
     background: #33aa33;
 }

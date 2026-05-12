@@ -9,34 +9,34 @@
 <body>
     <div id="game-container">
 
-        <div id="welcome-screen">
+        <div id="welcome">
             <h1>BlindMaze</h1>
-            <input id="username-input" type="text" placeholder="Enter your username" maxlength="20">
-            <button id="play-btn" disabled>Play Game</button>
-            <button id="instructions-btn">Show Instructions</button>
-            <button id="leaderboard-btn">Leaderboard</button>
+            <input id="nameInput" type="text" placeholder="Enter your username" maxlength="20">
+            <button id="playBtn" disabled>Play Game</button>
+            <button id="instrBtn">Show Instructions</button>
+            <button id="leadBtn">Leaderboard</button>
         </div>
 
-        <div id="game-screen" style="display:none">
+        <div id="game" style="display:none">
             <div id="game-header">
-                <span id="display-username"></span>
-                <span>Stage: <span id="stage-display">1</span></span>
-                <span>Time: <span id="timer-display">10</span>s</span>
-                <span>Lives: <span id="lives-display">&#9829;&#9829;&#9829;&#9829;&#9829;</span></span>
-                <span id="phase-display">Memorizing</span>
+                <span id="barName"></span>
+                <span>Stage: <span id="barStage">1</span></span>
+                <span>Time: <span id="barTime">10</span>s</span>
+                <span>Lives: <span id="barLives">&#9829;&#9829;&#9829;&#9829;&#9829;</span></span>
+                <span id="barPhase">Memorizing</span>
             </div>
             <div id="maze-container">
-                <div id="maze-grid"></div>
-                <div id="player"></div>
+                <div id="grid"></div>
+                <div id="pawn"></div>
             </div>
-            <button id="hint-btn">Hint (1x per stage)</button>
+            <button id="hintBtn">Hint (1x per stage)</button>
         </div>
 
     </div>
 
-    <div id="instructions-modal" class="modal" style="display:none">
+    <div id="modalInstr" class="modal" style="display:none">
         <div class="modal-content">
-            <span class="close-modal" data-modal="instructions-modal">&times;</span>
+            <span class="x" data-close="modalInstr">&times;</span>
             <h2>How to Play</h2>
             <p><strong>Memorizing Phase (10s):</strong> Walls are visible. Memorize the path to the finish. You cannot move.</p>
             <p><strong>Move Phase (20s):</strong> Walls disappear. Use arrow keys to reach the finish without hitting walls.</p>
@@ -45,26 +45,26 @@
         </div>
     </div>
 
-    <div id="leaderboard-modal" class="modal" style="display:none">
+    <div id="modalLead" class="modal" style="display:none">
         <div class="modal-content">
-            <span class="close-modal" data-modal="leaderboard-modal">&times;</span>
+            <span class="x" data-close="modalLead">&times;</span>
             <h2>Leaderboard</h2>
             <table id="leaderboard-table">
                 <thead>
                     <tr><th>Rank</th><th>Username</th><th>Stage</th></tr>
                 </thead>
-                <tbody id="leaderboard-body"></tbody>
+                <tbody id="leadBody"></tbody>
             </table>
-            <p id="leaderboard-empty">No scores yet.</p>
+            <p id="leadEmpty">No scores yet.</p>
         </div>
     </div>
 
-    <div id="gameover-modal" class="modal" style="display:none">
+    <div id="modalOver" class="modal" style="display:none">
         <div class="modal-content">
             <h2>Game Over</h2>
-            <p>Username: <span id="gameover-username"></span></p>
-            <p>Stage Reached: <span id="gameover-stage"></span></p>
-            <button id="save-score-btn">Save Score</button>
+            <p>Username: <span id="overName"></span></p>
+            <p>Stage Reached: <span id="overStage"></span></p>
+            <button id="saveBtn">Save Score</button>
         </div>
     </div>
 
