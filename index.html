@@ -3,29 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maze</title>
+    <title>BlindMaze</title>
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
-    <div id="timer"></div>
-    <div id="maze-container">
-        <div id="maze">
+    <div id="game-container">
 
+        <div id="welcome-screen">
+            <h1>BlindMaze</h1>
+            <input id="username-input" type="text" placeholder="Enter your username" maxlength="20">
+            <button id="play-btn" disabled>Play Game</button>
+            <button id="instructions-btn">Show Instructions</button>
+            <button id="leaderboard-btn">Leaderboard</button>
         </div>
-        <div id="player">
 
+        <div id="game-screen" style="display:none">
+            <div id="game-header">
+                <span id="display-username"></span>
+                <span>Stage: <span id="stage-display">1</span></span>
+                <span>Time: <span id="timer-display">10</span>s</span>
+                <span>Lives: <span id="lives-display">&#9829;&#9829;&#9829;&#9829;&#9829;</span></span>
+                <span id="phase-display">Memorizing</span>
+            </div>
+            <div id="maze-container">
+                <div id="maze-grid"></div>
+                <div id="player"></div>
+            </div>
+            <button id="hint-btn">Hint (1x per stage)</button>
+        </div>
+
+    </div>
+
+    <div id="instructions-modal" class="modal" style="display:none">
+        <div class="modal-content">
+            <span class="close-modal" data-modal="instructions-modal">&times;</span>
+            <h2>How to Play</h2>
+            <p><strong>Memorizing Phase (10s):</strong> Walls are visible. Memorize the path to the finish. You cannot move.</p>
+            <p><strong>Move Phase (20s):</strong> Walls disappear. Use arrow keys to reach the finish without hitting walls.</p>
+            <p>You have <strong>5 lives</strong>. Hitting a wall or running out of time costs 1 life.</p>
+            <p>Use the <strong>Hint</strong> button once per stage to reveal walls for 1 second.</p>
         </div>
     </div>
-    <div id="controls">
-        <button class="control-btn" id="up" onclick="movePlayer('up')"></button>
-        <button class="control-btn" id="left" onclick="movePlayer('left')"></button>
-        <button class="control-btn" id="right" onclick="movePlayer('right')"></button>
-        <button class="control-btn" id="down" onclick="movePlayer('down')"></button>
-    </div>
-    <div id="message">
-        <h2 id="message-text"></h2>
-        <button id="try-again" onclick="initGame()">Try Again</button>
 
+    <div id="leaderboard-modal" class="modal" style="display:none">
+        <div class="modal-content">
+            <span class="close-modal" data-modal="leaderboard-modal">&times;</span>
+            <h2>Leaderboard</h2>
+            <table id="leaderboard-table">
+                <thead>
+                    <tr><th>Rank</th><th>Username</th><th>Stage</th></tr>
+                </thead>
+                <tbody id="leaderboard-body"></tbody>
+            </table>
+            <p id="leaderboard-empty">No scores yet.</p>
+        </div>
+    </div>
+
+    <div id="gameover-modal" class="modal" style="display:none">
+        <div class="modal-content">
+            <h2>Game Over</h2>
+            <p>Username: <span id="gameover-username"></span></p>
+            <p>Stage Reached: <span id="gameover-stage"></span></p>
+            <button id="save-score-btn">Save Score</button>
+        </div>
     </div>
 
     <script src="index.js"></script>

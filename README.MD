@@ -1,100 +1,83 @@
+# BlindMaze
 
-## 1. Maze Generation
+Game memori maze berbasis web. Dimainkan di resolusi tablet 1000x600px.
 
-Algoritma yang digunakan adalah **Iterative DFS (Recursive Backtracking)** untuk menghasilkan perfect maze, yaitu maze yang memiliki tepat satu jalur antara dua titik mana pun.
+## Cara Bermain
 
-Langkah-langkah:
-1. Inisialisasi grid 15x15. Setiap cell memiliki empat tembok (atas, kanan, bawah, kiri).
-2. Mulai dari cell pojok kiri atas (0,0), tandai sebagai sudah dikunjungi.
-3. Masukkan cell awal ke dalam stack.
-4. Selama stack tidak kosong:
-   - Ambil cell dari puncak stack.
-   - Cari tetangga yang belum dikunjungi.
-   - Jika ada, pilih secara acak, hapus tembok antara cell saat ini dan tetangga yang dipilih, tandai tetangga sebagai sudah dikunjungi, lalu masukkan ke stack.
-   - Jika tidak ada, pop stack (mundur).
-5. Ulangi hingga semua cell telah dikunjungi.
+1. Masukkan username, klik **Play Game**.
+2. **Fase Menghafal (10 detik)**: Dinding terlihat. Hafalkan jalur menuju titik finish. Pemain tidak bisa bergerak.
+3. **Fase Bergerak (20 detik)**: Dinding menghilang. Gunakan **tanda panah** untuk bergerak ke finish tanpa menabrak dinding.
+4. Jika menabrak dinding atau kehabisan waktu, **1 nyawa berkurang** dan stage diulang.
+5. Jika sampai finish, naik ke **stage berikutnya** dengan dinding dan posisi start/finish baru.
+6. **Hint**: Klik tombol Hint (1x per stage) untuk melihat dinding selama 1 detik.
+7. **Game Over** saat nyawa habis. Skor bisa disimpan ke Leaderboard.
 
-## 2. Struktur Data Cell
+## Alur Game
 
-Setiap cell direpresentasikan sebagai objek dengan properti berikut:
+1. `init()` dipanggil saat halaman dimuat → layar welcome muncul.
+2. User input username → klik Play Game → `startGame()` dipanggil.
+3. `generateNewStage()`:
+   - Generate dinding acak (segmen horizontal, vertikal, L-shape, block 2x2).
+   - Validasi BFS untuk memastikan jalur dari start ke finish selalu ada.
+   - Render grid 10x10.
+   - Mulai fase menghafal (10 detik).
+4. Setelah 10 detik → fase bergerak (20 detik).
+5. Pemain bergerak dengan arrow key → `movePlayer()`.
+   - Jika kena dinding → alert + `loseLife()` → restart stage atau game over.
+   - Jika sampai finish → alert + `stageNumber++` + `generateNewStage()`.
+   - Jika waktu habis → alert + `loseLife()`.
+6. **Game Over** (`gameOver()`):
+   - Modal muncul dengan username, stage, tombol Save Score.
+   - Save score → simpan ke localStorage → tampilkan leaderboard → kembali ke welcome.
 
-```javascript
-{
-  row: number,     // indeks baris
-  col: number,     // indeks kolom
-  walls: {         // status tembok di setiap sisi
-    top: boolean,
-    right: boolean,
-    bottom: boolean,
-    left: boolean
-  },
-  visited: boolean // status kunjungan untuk algoritma generasi
-}
-```
+## Generate Dinding
 
-Nilai `true` pada properti `walls` berarti tembok masih ada. Nilai `false` berarti tembok sudah dihapus dan dapat dilewati.
+- 6-9 segmen dinding ditempatkan secara acak.
+- Tipe segmen: horizontal (2-4 cell), vertikal (2-4 cell), L-shape, atau block 2x2.
+- Start selalu di kolom kiri (baris acak), finish di kolom kanan (baris acak).
+- Start dan finish tidak pernah menjadi dinding.
+- **BFS (Breadth-First Search)** memvalidasi jalur dari start ke finish.
+- Jika jalur terblokir, dinding yang menghalangi dihapus satu per satu hingga jalur terbuka.
+- Terverifikasi: 2000/2000 generasi memiliki jalur valid.
 
-## 3. Player Movement
+## Struktur Grid
 
-Saat pemain menggerakkan karakter, fungsi `movePlayer(direction) akan:
+- Grid 10x10, setiap cell 48x48px.
+- Class CSS: `.cell` (default), `.start` (hijau), `.finish` (kuning), `.wall` (abu-abu), `.wall-hidden` (sama dengan default, untuk dinding yang disembunyikan).
+- Pemain dirender terpisah dengan `position: absolute` (lingkaran biru 38px).
 
-1. Memeriksa status `gameOver`. Jika true, tidak ada aksi.
-2. Mengambil data cell tempat pemain berada.
-3. Memeriksa keberadaan tembok di arah yang dituju:
-   - Jika ada tembok, pergerakan dibatalkan.
-   - Jika tidak, lanjut ke langkah berikutnya.
-4. Memperbarui posisi baris/kolom pemain.
-5. Menghitung ulang posisi visual menggunakan rumus `left = col * CELL_SIZE + 3` dan `top = row * CELL_SIZE + 3`.
-6. Memeriksa apakah pemain mencapai cell exit (pojok kanan bawah). Jika ya, game over, timer berhenti, dan pesan kemenangan ditampilkan.
+## Layar
 
-Kontrol keyboard mendukung:
-- `ArrowUp` / `W` → atas
-- `ArrowDown` / `S` → bawah
-- `ArrowLeft` / `A` → kiri
-- `ArrowRight` / `D` → kanan
+| Layar | Deskripsi |
+|---|---|
+| Welcome | Input username, Play Game, Show Instructions, Leaderboard |
+| Game | Header (username, stage, timer, lives, phase), grid 10x10, tombol Hint |
+| Instructions Modal | Penjelasan cara bermain |
+| Leaderboard Modal | Tabel skor dari localStorage, urutan stage descending |
+| Game Over Modal | Username, stage, tombol Save Score |
 
-## 4. Rendering
+## Leaderboard
 
-Fungsi `renderMaze()`:
-1. Membersihkan elemen `#maze`.
-2. Mengatur CSS Grid dengan `grid-template-columns` dan `grid-template-rows` sesuai ukuran maze.
-3. Melakukan iterasi seluruh cell:
-   - Membuat elemen `<div class="cell">`.
-   - Jika cell adalah exit, tambahkan class `exit`.
-   - Untuk setiap tembok yang masih ada, buat elemen `<div class="wall (top|right|bottom|left)">` di dalam cell.
-   - Masukkan cell ke dalam elemen `#maze`.
-4. Player dirender secara terpisah menggunakan CSS `position: absolute`, bukan sebagai bagian dari grid.
+- Disimpan di `localStorage` dengan key `blindmaze_scores`.
+- Format: `[{ username, stage, date }]`.
+- Diurutkan stage descending.
+- Ditampilkan di tabel dengan peringkat.
 
-## 5. Timer
+## Konfigurasi
 
-Fungsi `startTimer()`:
-- Menginisialisasi `seconds = 0`.
-- Menampilkan `00:00`.
-- Menggunakan `setInterval` dengan interval 1 detik untuk increment `seconds`.
-- Format tampilan: `MM:SS`.
-
-Fungsi `stopTimer()`:
-- Menghentikan interval dengan `clearInterval`.
-
-## 6. Alur Game
-
-1. `initGame()` dipanggil saat halaman dimuat.
-2. Di dalam `initGame()`:
-   - Menyembunyikan pesan kemenangan.
-   - Menghentikan timer.
-   - Mereset variabel (posisi pemain ke (0,0), `gameOver = false`).
-   - Memanggil `generateMaze()` untuk membuat maze baru.
-   - Memanggil `renderMaze()` untuk menampilkan maze.
-   - Memanggil `updatePlayerPosition()` untuk menempatkan pemain.
-   - Memanggil `startTimer()` untuk memulai timer.
-3. Pemain bergerak menggunakan tombol navigasi.
-4. Saat mencapai exit, timer berhenti dan pesan kemenangan muncul.
-5. Tombol "Try Again" memanggil `initGame()` untuk memulai game baru.
-
-## 7. Konfigurasi
-
-| Variable | Nilai | Deskripsi |
+| Variabel | Nilai | Deskripsi |
 |---|---|---|
-| `COLS` | 15 | Jumlah kolom maze |
-| `ROWS` | 15 | Jumlah baris maze |
-| `CELL_SIZE` | 35 | Ukuran cell dalam pixel |
+| `GRID_SIZE` | 10 | Ukuran grid (10x10) |
+| `MEMORIZE_TIME` | 10 | Durasi fase menghafal (detik) |
+| `MOVE_TIME` | 20 | Durasi fase bergerak (detik) |
+| `MAX_LIVES` | 5 | Jumlah nyawa maksimal |
+| `CELL_SIZE` | 48 | Ukuran cell dalam pixel |
+| `GAME_WIDTH` | 1000 | Lebar container game |
+| `GAME_HEIGHT` | 600 | Tinggi container game |
+
+## Catatan
+
+- Single page application (index.html).
+- Tidak menggunakan ES6 modules (import/export).
+- Kontrol hanya dengan arrow keys.
+- Tidak ada console error di Google Chrome.

@@ -1,198 +1,541 @@
-const COLS = 15;
-const ROWS = 15;
-const CELL_SIZE = 35;
+var GRID_SIZE = 10;
+var MEMORIZE_TIME = 10;
+var MOVE_TIME = 20;
+var MAX_LIVES = 5;
 
-let maze = [];
-let playerRow = 0;
-let playerCol = 0;
-const exitRow = ROWS - 1;
-const exitCol = COLS - 1;
-let timerInterval = null;
-let seconds = 0;
-let gameOver = false;
+var walls = [];
+var startRow, startCol, finishRow, finishCol;
+var playerRow, playerCol;
+var stageNumber = 1;
+var lives = MAX_LIVES;
+var username = '';
+var gameState = 'welcome';
+var timeLeft = 0;
+var timerInterval = null;
+var hintUsed = false;
+var hintTimer = null;
+var canMove = false;
 
-class Cell {
-    constructor(row, col) {
-        this.row = row;
-        this.col = col;
-        this.walls = { top: true, right: true, bottom: true, left: true };
-        this.visited = false;
+var savedWalls = [];
+var savedStartRow, savedStartCol, savedFinishRow, savedFinishCol;
+
+var welcomeScreen, gameScreen, playerElement, hintButton;
+var stageDisplay, timerDisplay, livesDisplay, phaseDisplay, playerNameDisplay;
+var gameOverName, gameOverStage, leaderboardBody, leaderboardEmpty;
+
+function getElement(id) {
+    return document.getElementById(id);
+}
+
+function init() {
+    welcomeScreen = getElement('welcome');
+    gameScreen = getElement('game');
+    playerElement = getElement('pawn');
+    stageDisplay = getElement('barStage');
+    timerDisplay = getElement('barTime');
+    livesDisplay = getElement('barLives');
+    phaseDisplay = getElement('barPhase');
+    playerNameDisplay = getElement('barName');
+    gameOverName = getElement('overName');
+    gameOverStage = getElement('overStage');
+    leaderboardBody = getElement('leadBody');
+    leaderboardEmpty = getElement('leadEmpty');
+    hintButton = getElement('hintBtn');
+
+    getElement('nameInput').oninput = function () {
+        getElement('playBtn').disabled = this.value.trim() === '';
+    };
+
+    getElement('playBtn').onclick = startGame;
+    getElement('instrBtn').onclick = function () {
+        getElement('modalInstr').style.display = 'flex';
+    };
+    getElement('leadBtn').onclick = function () {
+        refreshLeaderboard();
+        getElement('modalLead').style.display = 'flex';
+    };
+    hintButton.onclick = useHint;
+    getElement('saveBtn').onclick = saveScore;
+
+    var closeButtons = document.querySelectorAll('.x');
+    for (var i = 0; i < closeButtons.length; i++) {
+        closeButtons[i].onclick = function () {
+            getElement(this.getAttribute('data-close')).style.display = 'none';
+        };
     }
-}
 
-function generateMaze() {
-    maze = [];
-    for (let r = 0; r < ROWS; r++) {
-        maze[r] = [];
-        for (let c = 0; c < COLS; c++) {
-            maze[r][c] = new Cell(r, c);
-        }
-    }
-
-    const stack = [];
-    const start = maze[0][0];
-    start.visited = true;
-    stack.push(start);
-
-    while (stack.length > 0) {
-        const current = stack[stack.length - 1];
-        const neighbors = getUnvisitedNeighbors(current);
-
-        if (neighbors.length > 0) {
-            const next = neighbors[Math.floor(Math.random() * neighbors.length)];
-            removeWalls(current, next);
-            next.visited = true;
-            stack.push(next);
-        } else {
-            stack.pop();
-        }
-    }
-}
-
-function getUnvisitedNeighbors(cell) {
-    const neighbors = [];
-    const { row, col } = cell;
-
-    if (row > 0 && !maze[row - 1][col].visited) neighbors.push(maze[row - 1][col]);
-    if (row < ROWS - 1 && !maze[row + 1][col].visited) neighbors.push(maze[row + 1][col]);
-    if (col > 0 && !maze[row][col - 1].visited) neighbors.push(maze[row][col - 1]);
-    if (col < COLS - 1 && !maze[row][col + 1].visited) neighbors.push(maze[row][col + 1]);
-
-    return neighbors;
-}
-
-function removeWalls(a, b) {
-    const dr = a.row - b.row;
-    const dc = a.col - b.col;
-
-    if (dr === 1) { a.walls.top = false; b.walls.bottom = false; }
-    if (dr === -1) { a.walls.bottom = false; b.walls.top = false; }
-    if (dc === 1) { a.walls.left = false; b.walls.right = false; }
-    if (dc === -1) { a.walls.right = false; b.walls.left = false; }
-}
-
-function renderMaze() {
-    const mazeEl = document.getElementById('maze');
-    mazeEl.innerHTML = '';
-    mazeEl.style.gridTemplateColumns = `repeat(${COLS}, ${CELL_SIZE}px)`;
-    mazeEl.style.gridTemplateRows = `repeat(${ROWS}, ${CELL_SIZE}px)`;
-
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            const cell = maze[r][c];
-            const cellEl = document.createElement('div');
-            cellEl.className = 'cell';
-
-            if (r === exitRow && c === exitCol) {
-                cellEl.classList.add('exit');
-            }
-
-            for (const dir of ['top', 'right', 'bottom', 'left']) {
-                if (cell.walls[dir]) {
-                    const wallEl = document.createElement('div');
-                    wallEl.className = `wall ${dir}`;
-                    cellEl.appendChild(wallEl);
+    var modals = document.querySelectorAll('.modal');
+    for (var i = 0; i < modals.length; i++) {
+        modals[i].onclick = function (event) {
+            if (event.target === this) {
+                this.style.display = 'none';
+                if (this === getElement('modalOver')) {
+                    goToWelcome();
                 }
             }
+        };
+    }
 
-            mazeEl.appendChild(cellEl);
+    document.onkeydown = function (event) {
+        if (!canMove) return;
+        var direction = null;
+        if (event.key === 'ArrowUp') {
+            direction = 'up';
+            event.preventDefault();
+        } else if (event.key === 'ArrowDown') {
+            direction = 'down';
+            event.preventDefault();
+        } else if (event.key === 'ArrowLeft') {
+            direction = 'left';
+            event.preventDefault();
+        } else if (event.key === 'ArrowRight') {
+            direction = 'right';
+            event.preventDefault();
+        }
+        if (direction) {
+            movePlayer(direction);
+        }
+    };
+}
+
+function goToWelcome() {
+    gameScreen.style.display = 'none';
+    welcomeScreen.style.display = 'block';
+    gameState = 'welcome';
+    clearInterval(timerInterval);
+}
+
+function startGame() {
+    username = getElement('nameInput').value.trim();
+    if (!username) return;
+
+    stageNumber = 1;
+    lives = MAX_LIVES;
+    gameState = 'memorizing';
+
+    welcomeScreen.style.display = 'none';
+    gameScreen.style.display = 'flex';
+    playerNameDisplay.textContent = 'Player: ' + username;
+
+    generateNewStage();
+}
+
+function generateNewStage() {
+    generateWalls();
+
+    savedWalls = [];
+    for (var row = 0; row < GRID_SIZE; row++) {
+        savedWalls[row] = [];
+        for (var col = 0; col < GRID_SIZE; col++) {
+            savedWalls[row][col] = walls[row][col];
+        }
+    }
+    savedStartRow = startRow;
+    savedStartCol = startCol;
+    savedFinishRow = finishRow;
+    savedFinishCol = finishCol;
+
+    renderGrid();
+    startMemorizing();
+}
+
+function restartStage() {
+    walls = [];
+    for (var row = 0; row < GRID_SIZE; row++) {
+        walls[row] = [];
+        for (var col = 0; col < GRID_SIZE; col++) {
+            walls[row][col] = savedWalls[row][col];
+        }
+    }
+    startRow = savedStartRow;
+    startCol = savedStartCol;
+    finishRow = savedFinishRow;
+    finishCol = savedFinishCol;
+
+    renderGrid();
+    startMemorizing();
+}
+
+function isStartOrFinish(row, col) {
+    return (row === startRow && col === startCol) ||
+           (row === finishRow && col === finishCol);
+}
+
+function placeWallSegment() {
+    var row = Math.floor(Math.random() * GRID_SIZE);
+    var col = Math.floor(Math.random() * GRID_SIZE);
+    if (isStartOrFinish(row, col)) return;
+
+    var type = Math.floor(Math.random() * 4);
+    var length = 2 + Math.floor(Math.random() * 3);
+
+    if (type === 0) {
+        for (var i = 0; i < length; i++) {
+            var nc = col + i;
+            if (nc < GRID_SIZE && !isStartOrFinish(row, nc)) {
+                walls[row][nc] = true;
+            } else break;
+        }
+    } else if (type === 1) {
+        for (var i = 0; i < length; i++) {
+            var nr = row + i;
+            if (nr < GRID_SIZE && !isStartOrFinish(nr, col)) {
+                walls[nr][col] = true;
+            } else break;
+        }
+    } else if (type === 2) {
+        var hlen = 1 + Math.floor(Math.random() * 2);
+        var vlen = 1 + Math.floor(Math.random() * 2);
+        for (var i = 0; i < hlen; i++) {
+            var nc = col + i;
+            if (nc < GRID_SIZE && !isStartOrFinish(row, nc)) {
+                walls[row][nc] = true;
+            } else break;
+        }
+        for (var i = 1; i <= vlen; i++) {
+            var nr = row + i;
+            if (nr < GRID_SIZE && !isStartOrFinish(nr, col)) {
+                walls[nr][col] = true;
+            } else break;
+        }
+    } else {
+        for (var i = 0; i < 2; i++) {
+            for (var j = 0; j < 2; j++) {
+                var nr = row + i;
+                var nc = col + j;
+                if (nr < GRID_SIZE && nc < GRID_SIZE && !isStartOrFinish(nr, nc)) {
+                    walls[nr][nc] = true;
+                }
+            }
+        }
+    }
+}
+
+function generateWalls() {
+    startRow = Math.floor(Math.random() * GRID_SIZE);
+    startCol = 0;
+    finishRow = Math.floor(Math.random() * GRID_SIZE);
+    finishCol = GRID_SIZE - 1;
+
+    walls = [];
+    for (var row = 0; row < GRID_SIZE; row++) {
+        walls[row] = [];
+        for (var col = 0; col < GRID_SIZE; col++) {
+            walls[row][col] = false;
+        }
+    }
+
+    var segmentCount = 6 + Math.floor(Math.random() * 4);
+    for (var i = 0; i < segmentCount; i++) {
+        placeWallSegment();
+    }
+
+    ensurePathExists();
+}
+
+function runBfs(startRowBfs, startColBfs) {
+    var visited = [];
+    for (var row = 0; row < GRID_SIZE; row++) {
+        visited[row] = [];
+        for (var col = 0; col < GRID_SIZE; col++) {
+            visited[row][col] = false;
+        }
+    }
+
+    var queue = [{ row: startRowBfs, col: startColBfs }];
+    visited[startRowBfs][startColBfs] = true;
+    var head = 0;
+    var directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+    while (head < queue.length) {
+        var current = queue[head++];
+        for (var d = 0; d < directions.length; d++) {
+            var nextRow = current.row + directions[d][0];
+            var nextCol = current.col + directions[d][1];
+            if (nextRow >= 0 && nextRow < GRID_SIZE &&
+                nextCol >= 0 && nextCol < GRID_SIZE &&
+                !visited[nextRow][nextCol] &&
+                !walls[nextRow][nextCol]) {
+                visited[nextRow][nextCol] = true;
+                queue.push({ row: nextRow, col: nextCol });
+            }
+        }
+    }
+    return visited;
+}
+
+function ensurePathExists() {
+    var reachable = runBfs(startRow, startCol);
+
+    while (!reachable[finishRow][finishCol]) {
+        var candidates = [];
+        var directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+        for (var row = 0; row < GRID_SIZE; row++) {
+            for (var col = 0; col < GRID_SIZE; col++) {
+                if (!walls[row][col]) continue;
+                var adjacentToReachable = false;
+                for (var d = 0; d < directions.length; d++) {
+                    var neighborRow = row + directions[d][0];
+                    var neighborCol = col + directions[d][1];
+                    if (neighborRow >= 0 && neighborRow < GRID_SIZE &&
+                        neighborCol >= 0 && neighborCol < GRID_SIZE &&
+                        reachable[neighborRow][neighborCol]) {
+                        adjacentToReachable = true;
+                        break;
+                    }
+                }
+                if (adjacentToReachable) {
+                    candidates.push({ row: row, col: col });
+                }
+            }
+        }
+
+        if (candidates.length > 0) {
+            var pick = Math.floor(Math.random() * candidates.length);
+            walls[candidates[pick].row][candidates[pick].col] = false;
+        } else {
+            for (var row = 0; row < GRID_SIZE; row++) {
+                for (var col = 0; col < GRID_SIZE; col++) {
+                    walls[row][col] = false;
+                }
+            }
+            break;
+        }
+        reachable = runBfs(startRow, startCol);
+    }
+}
+
+function renderGrid() {
+    getElement('grid').innerHTML = '';
+    for (var row = 0; row < GRID_SIZE; row++) {
+        for (var col = 0; col < GRID_SIZE; col++) {
+            var cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.id = 'cell_' + row + '_' + col;
+
+            if (row === startRow && col === startCol) {
+                cell.classList.add('s');
+            } else if (row === finishRow && col === finishCol) {
+                cell.classList.add('f');
+            } else if (walls[row][col]) {
+                cell.classList.add('w');
+            }
+            getElement('grid').appendChild(cell);
+        }
+    }
+    playerRow = startRow;
+    playerCol = startCol;
+    updatePlayerPosition();
+}
+
+function showWalls(visible) {
+    for (var row = 0; row < GRID_SIZE; row++) {
+        for (var col = 0; col < GRID_SIZE; col++) {
+            if (!walls[row][col]) continue;
+            var cell = getElement('cell_' + row + '_' + col);
+            if (visible) {
+                cell.classList.remove('h');
+                cell.classList.add('w');
+            } else {
+                cell.classList.remove('w');
+                cell.classList.add('h');
+            }
         }
     }
 }
 
 function updatePlayerPosition() {
-    const playerEl = document.getElementById('player');
-    playerEl.style.width = `${CELL_SIZE - 6}px`;
-    playerEl.style.height = `${CELL_SIZE - 6}px`;
-    playerEl.style.left = `${playerCol * CELL_SIZE + 3}px`;
-    playerEl.style.top = `${playerRow * CELL_SIZE + 3}px`;
+    playerElement.style.left = (playerCol * 48 + 5) + 'px';
+    playerElement.style.top = (playerRow * 48 + 5) + 'px';
+}
+
+function updateLivesDisplay() {
+    var text = '';
+    for (var i = 0; i < lives; i++) {
+        text += '\u2665';
+    }
+    for (var i = lives; i < MAX_LIVES; i++) {
+        text += '\u2661';
+    }
+    livesDisplay.textContent = text;
+}
+
+function startMemorizing() {
+    gameState = 'memorizing';
+    canMove = false;
+    hintUsed = false;
+    hintButton.disabled = true;
+
+    if (hintTimer) {
+        clearTimeout(hintTimer);
+        hintTimer = null;
+    }
+
+    phaseDisplay.textContent = 'MEMORIZE';
+    stageDisplay.textContent = stageNumber;
+    updateLivesDisplay();
+
+    showWalls(true);
+
+    timeLeft = MEMORIZE_TIME;
+    timerDisplay.textContent = timeLeft;
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(function () {
+        timeLeft--;
+        timerDisplay.textContent = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            startMoving();
+        }
+    }, 1000);
+}
+
+function startMoving() {
+    gameState = 'moving';
+    canMove = true;
+    hintButton.disabled = false;
+
+    phaseDisplay.textContent = 'MOVE!';
+
+    showWalls(false);
+
+    timeLeft = MOVE_TIME;
+    timerDisplay.textContent = timeLeft;
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(function () {
+        timeLeft--;
+        timerDisplay.textContent = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            onTimeUp();
+        }
+    }, 1000);
 }
 
 function movePlayer(direction) {
-    if (gameOver) return;
+    if (!canMove || gameState === 'gameover') return;
 
-    const cell = maze[playerRow][playerCol];
-    let newRow = playerRow;
-    let newCol = playerCol;
+    var newRow = playerRow;
+    var newCol = playerCol;
 
-    switch (direction) {
-        case 'up':
-            if (cell.walls.top) return;
-            newRow--;
-            break;
-        case 'down':
-            if (cell.walls.bottom) return;
-            newRow++;
-            break;
-        case 'left':
-            if (cell.walls.left) return;
-            newCol--;
-            break;
-        case 'right':
-            if (cell.walls.right) return;
-            newCol++;
-            break;
+    if (direction === 'up') newRow--;
+    else if (direction === 'down') newRow++;
+    else if (direction === 'left') newCol--;
+    else if (direction === 'right') newCol++;
+
+    if (newRow < 0 || newRow >= GRID_SIZE || newCol < 0 || newCol >= GRID_SIZE) return;
+
+    if (walls[newRow][newCol]) {
+        canMove = false;
+        clearInterval(timerInterval);
+        alert('Hit a wall!');
+        loseLife();
+        return;
     }
 
     playerRow = newRow;
     playerCol = newCol;
     updatePlayerPosition();
 
-    if (playerRow === exitRow && playerCol === exitCol) {
-        gameOver = true;
-        stopTimer();
-        showMessage(`You escaped! Time: ${formatTime(seconds)}`);
+    if (playerRow === finishRow && playerCol === finishCol) {
+        canMove = false;
+        clearInterval(timerInterval);
+        alert('Stage ' + stageNumber + ' Complete!');
+        stageNumber++;
+        generateNewStage();
     }
 }
 
-function startTimer() {
-    seconds = 0;
-    document.getElementById('timer').textContent = formatTime(0);
-    timerInterval = setInterval(() => {
-        seconds++;
-        document.getElementById('timer').textContent = formatTime(seconds);
+function loseLife() {
+    lives--;
+    updateLivesDisplay();
+    if (lives <= 0) {
+        gameOver();
+    } else {
+        restartStage();
+    }
+}
+
+function onTimeUp() {
+    canMove = false;
+    alert('Time is up!');
+    loseLife();
+}
+
+function useHint() {
+    if (hintUsed || gameState !== 'moving') return;
+    hintUsed = true;
+    hintButton.disabled = true;
+
+    showWalls(true);
+
+    if (hintTimer) clearTimeout(hintTimer);
+    hintTimer = setTimeout(function () {
+        showWalls(false);
+        hintTimer = null;
     }, 1000);
 }
 
-function stopTimer() {
+function gameOver() {
+    gameState = 'gameover';
+    canMove = false;
     clearInterval(timerInterval);
-}
 
-function formatTime(sec) {
-    const m = Math.floor(sec / 60).toString().padStart(2, '0');
-    const s = (sec % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-}
-
-function showMessage(text) {
-    document.getElementById('message-text').textContent = text;
-    document.getElementById('message').style.display = 'block';
-}
-
-function hideMessage() {
-    document.getElementById('message').style.display = 'none';
-}
-
-function initGame() {
-    hideMessage();
-    stopTimer();
-    gameOver = false;
-    playerRow = 0;
-    playerCol = 0;
-
-    generateMaze();
-    renderMaze();
-    updatePlayerPosition();
-    startTimer();
-}
-
-document.addEventListener('keydown', (e) => {
-    switch (e.key) {
-        case 'ArrowUp': case 'w': case 'W': e.preventDefault(); movePlayer('up'); break;
-        case 'ArrowDown': case 's': case 'S': e.preventDefault(); movePlayer('down'); break;
-        case 'ArrowLeft': case 'a': case 'A': e.preventDefault(); movePlayer('left'); break;
-        case 'ArrowRight': case 'd': case 'D': e.preventDefault(); movePlayer('right'); break;
+    if (hintTimer) {
+        clearTimeout(hintTimer);
+        hintTimer = null;
     }
-});
 
-initGame();
+    gameOverName.textContent = username;
+    gameOverStage.textContent = stageNumber;
+    getElement('modalOver').style.display = 'flex';
+    gameScreen.style.display = 'none';
+    welcomeScreen.style.display = 'none';
+}
+
+function saveScore() {
+    var scores = JSON.parse(localStorage.getItem('blindmaze_scores') || '[]');
+    scores.push({
+        username: username,
+        stage: stageNumber,
+        date: new Date().toISOString()
+    });
+    scores.sort(function (a, b) { return b.stage - a.stage; });
+    localStorage.setItem('blindmaze_scores', JSON.stringify(scores));
+
+    getElement('modalOver').style.display = 'none';
+    refreshLeaderboard();
+    getElement('modalLead').style.display = 'flex';
+    goToWelcome();
+}
+
+function refreshLeaderboard() {
+    var scores = JSON.parse(localStorage.getItem('blindmaze_scores') || '[]');
+    scores.sort(function (a, b) { return b.stage - a.stage; });
+
+    leaderboardBody.innerHTML = '';
+    if (scores.length === 0) {
+        leaderboardEmpty.style.display = 'block';
+        return;
+    }
+    leaderboardEmpty.style.display = 'none';
+
+    for (var i = 0; i < scores.length; i++) {
+        var row = document.createElement('tr');
+        row.innerHTML = '<td>' + (i + 1) + '</td><td>' +
+            escapeHtml(scores[i].username) + '</td><td>' +
+            scores[i].stage + '</td>';
+        leaderboardBody.appendChild(row);
+    }
+}
+
+function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+init();
